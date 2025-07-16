@@ -2,10 +2,11 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := securetoken
-LOCAL_SRC_FILES := securetoken.cpp
+LOCAL_MODULE    := secure_native
+LOCAL_SRC_FILES := main.cpp token_core.cpp sequrty_core.cpp
 
-# শুধু log লাইব দিয়ে রাখি
-LOCAL_LDLIBS    := -llog
+LOCAL_C_INCLUDES := $(LOCAL_PATH)  # header ফাইলের জন্য
+
+LOCAL_LDLIBS := -llog -lcrypto
 
 include $(BUILD_SHARED_LIBRARY)
