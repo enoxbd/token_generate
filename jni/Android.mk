@@ -5,8 +5,8 @@ include $(CLEAR_VARS)
 LOCAL_MODULE    := secure_native
 LOCAL_SRC_FILES := main.cpp token_core.cpp sequrty_core.cpp
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)  # header ফাইলের জন্য
+LOCAL_C_INCLUDES := $(LOCAL_PATH)
 
-LOCAL_LDLIBS := -llog -lcrypto
+LOCAL_LDLIBS := -llog
 
 include $(BUILD_SHARED_LIBRARY)
