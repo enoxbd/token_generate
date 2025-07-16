@@ -2,13 +2,13 @@
 #include <android/log.h>
 #include <stdlib.h>
 
-#include "security_core.cpp"
-#include "token_core.cpp"
+#include "security_core.hpp"  // header ফাইল include করো
+#include "token_core.hpp"     // header ফাইল include করো
 
 #define LOG_TAG "MainSecure"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// পথ: Application package name অনুযায়ী
+// Application package name অনুযায়ী SO ফাইলের path
 #define SO_PATH "/data/data/com.my.newproject8/lib/libsecure_native.so"
 
 extern "C"
