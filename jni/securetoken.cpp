@@ -1,25 +1,30 @@
 #include <jni.h>
 #include <string>
 #include <android/log.h>
-#include <openssl/sha.h>
-#include <time.h>
+#include <ctime>
+#include <sstream>
+#include <iomanip>
+#include <cstring>
+#include <openssl/sha.h> // ⚠️ এটা বাদ দিতে চাইলে নিচে Native hash function দাও
 
 #define LOG_TAG "SecureToken"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
+// Simple SHA256 implementation using NDK (or write own version if OpenSSL not present)
 std::string sha256(const std::string& data) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256((const unsigned char*)data.c_str(), data.size(), hash);
-    char buf[2*SHA256_DIGEST_LENGTH+1];
-    for(int i=0; i < SHA256_DIGEST_LENGTH; ++i) {
-        sprintf(buf + i*2, "%02x", hash[i]);
+    SHA256(reinterpret_cast<const unsigned char*>(data.c_str()), data.length(), hash);
+
+    std::stringstream ss;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
     }
-    return std::string(buf);
+    return ss.str();
 }
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_my_newproject8_SecureTokenManager_generateSecureToken(JNIEnv* env, jobject thiz) {
+Java_com_my_newproject8_SecureTokenManager_generateSecureToken(JNIEnv *env, jobject thiz) {
     std::string seasonId = "USER_SEASON_ID";
     std::string deviceId = "ANDROID_DEVICE_ID";
     std::string fingerprint = "MODEL_BOARD";
@@ -28,10 +33,8 @@ Java_com_my_newproject8_SecureTokenManager_generateSecureToken(JNIEnv* env, jobj
     std::string timeStr = std::to_string(t);
 
     std::string base = seasonId + ":" + deviceId + ":" + fingerprint + ":" + uniqueId + ":" + timeStr;
-
     LOGI("Base String: %s", base.c_str());
 
     std::string token = sha256(base);
-
     return env->NewStringUTF(token.c_str());
 }
