@@ -4,22 +4,22 @@
 #include <ctime>
 #include <sstream>
 #include <iomanip>
-#include <cstring>
-#include <openssl/sha.h> // ⚠️ এটা বাদ দিতে চাইলে নিচে Native hash function দাও
+#include "sha256_small.hpp"  // আমাদের নিজস্ব SHA256 implementation
 
 #define LOG_TAG "SecureToken"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// Simple SHA256 implementation using NDK (or write own version if OpenSSL not present)
-std::string sha256(const std::string& data) {
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256(reinterpret_cast<const unsigned char*>(data.c_str()), data.length(), hash);
+std::string sha256(const std::string& input) {
+    SHA256_CTX ctx;
+    uint8_t hash[32];
+    sha256_init(&ctx);
+    sha256_update(&ctx, (const uint8_t*)input.c_str(), input.size());
+    sha256_final(&ctx, hash);
 
-    std::stringstream ss;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
-    }
-    return ss.str();
+    std::ostringstream os;
+    for (int i = 0; i < 32; ++i)
+        os << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+    return os.str();
 }
 
 extern "C"
