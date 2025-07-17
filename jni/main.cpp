@@ -2,6 +2,7 @@
 #include <string>
 #include <android/log.h>
 #include "TokenCore.hpp"
+#include "SecurityCore.hpp"
 
 #define LOG_TAG "NativeSecure"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
