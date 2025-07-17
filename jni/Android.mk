@@ -8,10 +8,10 @@ LOCAL_SRC_FILES := \
     main.cpp \
     JNIUtils.cpp \
     SecurityCore.cpp \
-    TokenCore.cpp
+    TokenCore.cpp \
+    aes.c    # এখানে aes.c যোগ করো
 
 LOCAL_CPPFLAGS += -std=c++11
 LOCAL_LDLIBS := -llog
-APP_PLATFORM := android-21
 
 include $(BUILD_SHARED_LIBRARY)
