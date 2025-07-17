@@ -1,12 +1,28 @@
-#ifndef AES_HPP
-#define AES_HPP
+#ifndef AES_ENCRYPTION_HPP
+#define AES_ENCRYPTION_HPP
 
 #include <string>
+#include <vector>
+#include <stdint.h>
 
-// AES 128-bit CBC মোড এনক্রিপশন
-std::string aesEncrypt(const std::string& plainText, const std::string& password);
+class AES128 {
+private:
+    static const uint8_t sbox[256];
+    static const uint8_t rcon[10];
 
-// AES 128-bit CBC মোড ডিক্রিপশন (প্রয়োজনে)
-std::string aesDecrypt(const std::string& cipherText, const std::string& password);
+    uint8_t key[16];
+    uint8_t roundKeys[176];
 
-#endif
+    void KeyExpansion();
+    void SubBytes(uint8_t* state);
+    void ShiftRows(uint8_t* state);
+    void MixColumns(uint8_t* state);
+    void AddRoundKey(uint8_t* state, int round);
+    void Cipher(uint8_t* input, uint8_t* output);
+
+public:
+    AES128(const std::string& keyStr);
+    std::string encrypt(const std::string& plaintext);
+};
+
+#endif // AES_ENCRYPTION_HPP
