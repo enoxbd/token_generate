@@ -1,5 +1,6 @@
 #include "utils.hpp"
 #include <jni.h>
+#include <vector>
 #include <string>
 #include <sstream>
 #include <iomanip>
