@@ -2,8 +2,8 @@
 #include <android/log.h>
 #include <stdlib.h>
 
-#include "security_core.hpp"  // detectThreats()
-#include "token_core.hpp"
+#include "security_core.hpp"  // bool detectThreats(JNIEnv*, jobject)
+#include "token_core.hpp"     // std::string generateSecureToken(JNIEnv*, jobject)
 #include "utils.hpp"
 
 #define LOG_TAG "MainSecure"
@@ -14,35 +14,27 @@ JNIEXPORT jstring JNICALL
 Java_com_my_newproject8_SecureManager_getSecureToken(JNIEnv* env, jobject thiz, jobject context) {
     LOGI("🔐 getSecureToken() called");
 
-    // ✅ Context null check
+    // ✅ Null context check
     if (context == nullptr) {
         LOGI("❌ Context is NULL");
         return env->NewStringUTF("ERROR_NULL_CONTEXT");
     }
 
-    // ✅ Run threat detection
-    bool threat = false;
-    try {
-        threat = detectThreats(env, context);
-    } catch (...) {
-        LOGI("❌ Exception during detectThreats()");
-        return env->NewStringUTF("ERROR_DETECT_THREATS_FAILED");
-    }
-
+    // ✅ Threat detection
+    bool threat = detectThreats(env, context);
     if (threat) {
-        LOGI("❌ Threat detected by native code");
+        LOGI("❌ Threat detected. Aborting token generation.");
         return env->NewStringUTF("ERROR_THREAT_DETECTED");
     }
 
-    // ✅ Generate token safely
-    std::string token;
-    try {
-        token = generateSecureToken(env, context);
-    } catch (...) {
-        LOGI("❌ Exception during token generation");
+    // ✅ Generate token
+    std::string token = generateSecureToken(env, context);
+    if (token.empty()) {
+        LOGI("❌ Token generation failed (empty string returned)");
         return env->NewStringUTF("ERROR_TOKEN_GENERATION_FAILED");
     }
 
-    LOGI("✅ Token generated successfully: %s", token.c_str());
+    // ✅ Success
+    LOGI("✅ Token generated: %s", token.c_str());
     return env->NewStringUTF(token.c_str());
 }
