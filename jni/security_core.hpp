@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-const char* detectThreats(JNIEnv* env, jobject ctx);
+bool detectThreats(JNIEnv* env, jobject ctx);
 
 #ifdef __cplusplus
 }
