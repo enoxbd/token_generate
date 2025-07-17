@@ -1,82 +1,160 @@
 #include "utils.hpp"
+#include <jni.h>
+#include <string>
 #include <android/log.h>
-#include <unistd.h>
-#include <cstdlib>
 #include <ctime>
+#include <cstdlib>
 #include <sstream>
 #include <iomanip>
 #include <random>
-#include <sys/system_properties.h>
+#include <openssl/sha.h>
+#include <openssl/aes.h>
+#include <openssl/rand.h>
 
-#define LOG_TAG "SecureUtils"
+#define LOG_TAG "Utils"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// SharedPreferences থেকে session_id নেবে
+// SharedPreferences থেকে key দিয়ে value নেয়ার JNI কোড
 std::string getSharedPreference(JNIEnv *env, jobject context, const std::string &key) {
     jclass contextClass = env->GetObjectClass(context);
-    jmethodID getSharedPreferences = env->GetMethodID(contextClass, "getSharedPreferences",
-                                                       "(Ljava/lang/String;I)Landroid/content/SharedPreferences;");
-    jobject sharedPrefs = env->CallObjectMethod(context,
-        getSharedPreferences,
-        env->NewStringUTF("User"),
-        0);
+    jmethodID getSharedPrefMethod = env->GetMethodID(contextClass, "getSharedPreferences", "(Ljava/lang/String;I)Landroid/content/SharedPreferences;");
+    jstring spName = env->NewStringUTF("YourPreferenceName"); // স্পিফিক SharedPreferences নাম
+    jobject sharedPreferences = env->CallObjectMethod(context, getSharedPrefMethod, spName, 0);
 
-    jclass prefsClass = env->GetObjectClass(sharedPrefs);
-    jmethodID getString = env->GetMethodID(prefsClass, "getString",
-                                           "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
+    jclass spClass = env->GetObjectClass(sharedPreferences);
+    jmethodID getStringMethod = env->GetMethodID(spClass, "getString", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
     jstring jKey = env->NewStringUTF(key.c_str());
-    jstring defValue = env->NewStringUTF("");
-    jstring value = (jstring) env->CallObjectMethod(sharedPrefs, getString, jKey, defValue);
+    jstring jDefault = env->NewStringUTF("");
 
-    const char *str = env->GetStringUTFChars(value, 0);
-    std::string result(str);
-    env->ReleaseStringUTFChars(value, str);
-    return result;
+    jstring jValue = (jstring)env->CallObjectMethod(sharedPreferences, getStringMethod, jKey, jDefault);
+
+    const char *valueChars = env->GetStringUTFChars(jValue, NULL);
+    std::string valueStr(valueChars);
+    env->ReleaseStringUTFChars(jValue, valueChars);
+
+    env->DeleteLocalRef(jKey);
+    env->DeleteLocalRef(jDefault);
+    env->DeleteLocalRef(jValue);
+    env->DeleteLocalRef(spName);
+    env->DeleteLocalRef(sharedPreferences);
+    env->DeleteLocalRef(spClass);
+    env->DeleteLocalRef(contextClass);
+
+    return valueStr;
 }
 
-// Android ID
+// Device ID নেয়ার JNI কোড (Android ID)
 std::string getDeviceId(JNIEnv *env, jobject context) {
-    jclass secureClass = env->FindClass("android/provider/Settings$Secure");
-    jmethodID getString = env->GetStaticMethodID(secureClass, "getString",
-                                                 "(Landroid/content/ContentResolver;Ljava/lang/String;)Ljava/lang/String;");
     jclass contextClass = env->GetObjectClass(context);
-    jmethodID getContentResolver = env->GetMethodID(contextClass, "getContentResolver",
-                                                    "()Landroid/content/ContentResolver;");
-    jobject resolver = env->CallObjectMethod(context, getContentResolver);
-    jstring androidId = (jstring) env->CallStaticObjectMethod(secureClass, getString, resolver,
-                                                              env->NewStringUTF("android_id"));
+    jmethodID getContentResolverMethod = env->GetMethodID(contextClass, "getContentResolver", "()Landroid/content/ContentResolver;");
+    jobject contentResolver = env->CallObjectMethod(context, getContentResolverMethod);
 
-    const char *id = env->GetStringUTFChars(androidId, 0);
-    std::string result(id);
-    env->ReleaseStringUTFChars(androidId, id);
-    return result;
+    jclass secureClass = env->FindClass("android/provider/Settings$Secure");
+    jmethodID getStringMethod = env->GetStaticMethodID(secureClass, "getString",
+                                                      "(Landroid/content/ContentResolver;Ljava/lang/String;)Ljava/lang/String;");
+    jstring androidIdStr = env->NewStringUTF("android_id");
+    jstring androidId = (jstring)env->CallStaticObjectMethod(secureClass, getStringMethod, contentResolver, androidIdStr);
+
+    const char *androidIdChars = env->GetStringUTFChars(androidId, NULL);
+    std::string androidIdStrCpp(androidIdChars);
+    env->ReleaseStringUTFChars(androidId, androidIdChars);
+
+    env->DeleteLocalRef(androidIdStr);
+    env->DeleteLocalRef(androidId);
+    env->DeleteLocalRef(secureClass);
+    env->DeleteLocalRef(contentResolver);
+    env->DeleteLocalRef(contextClass);
+
+    return androidIdStrCpp;
 }
 
-// Build fingerprint
+// Device fingerprint নেয়ার JNI কোড (Build.FINGERPRINT)
 std::string getDeviceFingerprint(JNIEnv *env) {
-    char fingerprint[PROP_VALUE_MAX];
-    __system_property_get("ro.build.fingerprint", fingerprint);
-    return std::string(fingerprint);
+    jclass buildClass = env->FindClass("android/os/Build");
+    jfieldID fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
+    jstring fingerprint = (jstring)env->GetStaticObjectField(buildClass, fingerprintField);
+
+    const char *fpChars = env->GetStringUTFChars(fingerprint, NULL);
+    std::string fingerprintStr(fpChars);
+    env->ReleaseStringUTFChars(fingerprint, fpChars);
+
+    env->DeleteLocalRef(fingerprint);
+    env->DeleteLocalRef(buildClass);
+
+    return fingerprintStr;
 }
 
-// সময়
+// Current time string (epoch seconds)
 std::string getCurrentTime() {
-    time_t now = time(0);
-    std::stringstream ss;
-    ss << now;
-    return ss.str();
+    std::time_t now = std::time(nullptr);
+    return std::to_string(now);
 }
 
-// র‍্যান্ডম স্ট্রিং
+// Random string generator (hexadecimal)
 std::string generateRandomString(int length) {
-    const std::string chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const char *chars = "0123456789abcdef";
+    std::string result;
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, chars.length() - 1);
+    std::uniform_int_distribution<> dis(0, 15);
 
-    std::string result;
     for (int i = 0; i < length; ++i) {
         result += chars[dis(gen)];
     }
     return result;
+}
+
+// SHA256 hash function (using OpenSSL)
+std::string sha256(const std::string &input) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256Ctx;
+    SHA256_Init(&sha256Ctx);
+    SHA256_Update(&sha256Ctx, input.c_str(), input.size());
+    SHA256_Final(hash, &sha256Ctx);
+
+    std::stringstream ss;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+    }
+    return ss.str();
+}
+
+// AES-128 CBC encrypt (using OpenSSL)
+std::string aesEncrypt(const std::string &data, const std::string &password) {
+    // AES key must be 16 bytes for AES-128
+    unsigned char key[16] = {0};
+    // Simple key derivation: copy password or pad with 0
+    for (int i = 0; i < 16 && i < (int)password.size(); i++) {
+        key[i] = password[i];
+    }
+
+    unsigned char iv[16] = {0};  // zero IV
+
+    AES_KEY aesKey;
+    AES_set_encrypt_key(key, 128, &aesKey);
+
+    // Padding data to multiple of 16 bytes (PKCS7)
+    size_t dataLen = data.size();
+    size_t paddedLen = ((dataLen / 16) + 1) * 16;
+    unsigned char *inputBuf = new unsigned char[paddedLen];
+    memcpy(inputBuf, data.c_str(), dataLen);
+    unsigned char padVal = paddedLen - dataLen;
+    for (size_t i = dataLen; i < paddedLen; i++) {
+        inputBuf[i] = padVal;
+    }
+
+    unsigned char *outBuf = new unsigned char[paddedLen];
+
+    AES_cbc_encrypt(inputBuf, outBuf, paddedLen, &aesKey, iv, AES_ENCRYPT);
+
+    // Convert to hex string
+    std::stringstream ss;
+    for (size_t i = 0; i < paddedLen; i++) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int)outBuf[i];
+    }
+
+    delete[] inputBuf;
+    delete[] outBuf;
+
+    return ss.str();
 }
