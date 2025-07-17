@@ -7,8 +7,8 @@
 #include <sstream>
 #include <iomanip>
 #include "utils.hpp"
-
 #include "sha256_small.hpp"
+#include <chrono>
 
 #define LOG_TAG "TokenCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -41,7 +41,16 @@ std::string generateSecureToken(JNIEnv* env, jobject ctx) {
     std::string session = getSP(env, ctx, "User", "session_id");
     std::string device = getprop("ro.serialno");
     std::string fp = getprop("ro.build.fingerprint");
-    long t = (time(NULL) / 10) * 10;
+
+    // Current Unix time in seconds
+    long t = time(NULL);
+
+    // If you want to use milliseconds instead, uncomment below and comment above:
+    /*
+    auto now = std::chrono::system_clock::now();
+    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    long t = static_cast<long>(millis);
+    */
 
     static bool seeded = false;
     if (!seeded) {
