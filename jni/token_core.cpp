@@ -6,7 +6,7 @@
 #include <sys/system_properties.h>
 #include <sstream>
 #include <iomanip>
-
+#include "utils.hpp"
 #include "sha256_small.hpp"  // এখানে sha256 ফাংশন ডিফাইন করা আছে
 
 #define LOG_TAG "TokenCore"
