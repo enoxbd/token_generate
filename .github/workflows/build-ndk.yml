@@ -13,11 +13,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Download Android NDK
+    - name: Download and unzip Android NDK
       run: |
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-        unzip android-ndk-r25b-linux.zip
-        export ANDROID_NDK=$PWD/android-ndk-r25b
+        unzip -q android-ndk-r25b-linux.zip
 
     - name: Build shared library
       run: |
