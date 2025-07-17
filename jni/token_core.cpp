@@ -1,7 +1,6 @@
 #include <jni.h>
 #include <string>
 #include <android/log.h>
-#include <openssl/sha.h>
 #include <time.h>
 #include <cstdlib>
 #include <sys/system_properties.h>
