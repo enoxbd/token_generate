@@ -12,5 +12,6 @@ LOCAL_SRC_FILES := \
 
 LOCAL_CPPFLAGS += -std=c++11
 LOCAL_LDLIBS := -llog
+APP_PLATFORM := android-21
 
 include $(BUILD_SHARED_LIBRARY)
