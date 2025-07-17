@@ -6,6 +6,7 @@
 #include <sys/system_properties.h>
 #include <sys/ptrace.h>
 #include <cstring>
+#include <string>
 #include "utils.hpp"
 
 #define LOG_TAG "SecurityCore"
@@ -96,7 +97,8 @@ bool isEmulator() {
     return false;
 }
 
-// Updated detectThreats
+// detectThreats এখন std::string রিটার্ন করবে, যা থ্রেটের নাম অথবা "Safe"
+extern "C"
 std::string detectThreats(JNIEnv* env, jobject ctx) {
     if (isRooted()) return "Rooted";
     if (isFrida()) return "FridaDetected";
