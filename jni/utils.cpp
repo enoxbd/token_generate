@@ -1,28 +1,25 @@
 #include "utils.hpp"
-#include <jni.h>
-#include <string>
-#include <ctime>
-#include <cstdlib>
-#include <random>
 #include <android/log.h>
-#include <sys/system_properties.h>
+#include <ctime>
+#include <random>
 
-#define LOG_TAG "Utils"
+#define LOG_TAG "JNIUtils"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// SharedPreferences থেকে session_id নেয়া
+// SharedPreferences থেকে key-এর মান পড়া
 std::string getSharedPreference(JNIEnv *env, jobject context, const std::string &key) {
-    jclass ctxCls = env->GetObjectClass(context);
-    jmethodID getSharedPrefsMethod = env->GetMethodID(ctxCls, "getSharedPreferences", "(Ljava/lang/String;I)Landroid/content/SharedPreferences;");
-    jobject prefs = env->CallObjectMethod(context, getSharedPrefsMethod, env->NewStringUTF("User"), 0);
+    jclass contextClass = env->GetObjectClass(context);
+    jmethodID getSharedPreferences = env->GetMethodID(contextClass, "getSharedPreferences", 
+        "(Ljava/lang/String;I)Landroid/content/SharedPreferences;");
+    jobject sharedPref = env->CallObjectMethod(context, getSharedPreferences, 
+        env->NewStringUTF("shared"), 0); // MODE_PRIVATE = 0
 
-    jclass prefsCls = env->GetObjectClass(prefs);
-    jmethodID getStringMethod = env->GetMethodID(prefsCls, "getString", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
-    jstring jValue = (jstring)env->CallObjectMethod(prefs, getStringMethod, env->NewStringUTF(key.c_str()), nullptr);
+    jclass prefClass = env->GetObjectClass(sharedPref);
+    jmethodID getString = env->GetMethodID(prefClass, "getString", 
+        "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
 
-    if (jValue == nullptr) {
-        return "";
-    }
+    jstring jValue = (jstring)env->CallObjectMethod(sharedPref, getString, 
+        env->NewStringUTF(key.c_str()), env->NewStringUTF(""));
 
     const char *value = env->GetStringUTFChars(jValue, nullptr);
     std::string result(value);
@@ -30,52 +27,53 @@ std::string getSharedPreference(JNIEnv *env, jobject context, const std::string 
     return result;
 }
 
-// Android ID নেওয়া
+// ANDROID_ID
 std::string getDeviceId(JNIEnv *env, jobject context) {
-    jclass contextClass = env->GetObjectClass(context);
-    jmethodID getContentResolverMethod = env->GetMethodID(contextClass, "getContentResolver", "()Landroid/content/ContentResolver;");
-    jobject contentResolver = env->CallObjectMethod(context, getContentResolverMethod);
-
-    jclass settingsSecureClass = env->FindClass("android/provider/Settings$Secure");
-    jmethodID getStringMethod = env->GetStaticMethodID(settingsSecureClass, "getString",
+    jclass settingsSecure = env->FindClass("android/provider/Settings$Secure");
+    jmethodID getString = env->GetStaticMethodID(settingsSecure, "getString", 
         "(Landroid/content/ContentResolver;Ljava/lang/String;)Ljava/lang/String;");
-    jstring androidIdString = (jstring)env->CallStaticObjectMethod(settingsSecureClass, getStringMethod, contentResolver, env->NewStringUTF("android_id"));
 
-    const char *androidId = env->GetStringUTFChars(androidIdString, nullptr);
-    std::string deviceId(androidId);
-    env->ReleaseStringUTFChars(androidIdString, androidId);
+    jclass contextClass = env->GetObjectClass(context);
+    jmethodID getContentResolver = env->GetMethodID(contextClass, "getContentResolver", 
+        "()Landroid/content/ContentResolver;");
+    jobject contentResolver = env->CallObjectMethod(context, getContentResolver);
 
-    return deviceId;
+    jstring androidId = (jstring)env->CallStaticObjectMethod(settingsSecure, getString,
+        contentResolver, env->NewStringUTF("android_id"));
+
+    const char *value = env->GetStringUTFChars(androidId, nullptr);
+    std::string result(value);
+    env->ReleaseStringUTFChars(androidId, value);
+    return result;
 }
 
-// Fingerprint নেওয়া
+// FINGERPRINT
 std::string getDeviceFingerprint(JNIEnv *env) {
-    char fingerprint[PROP_VALUE_MAX];
-    __system_property_get("ro.build.fingerprint", fingerprint);
-    return std::string(fingerprint);
+    jclass buildClass = env->FindClass("android/os/Build");
+    jfieldID fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
+    jstring fingerprint = (jstring)env->GetStaticObjectField(buildClass, fingerprintField);
+
+    const char *value = env->GetStringUTFChars(fingerprint, nullptr);
+    std::string result(value);
+    env->ReleaseStringUTFChars(fingerprint, value);
+    return result;
 }
 
-// বর্তমান UNIX timestamp
+// CURRENT TIME
 std::string getCurrentTime() {
-    std::time_t t = std::time(nullptr);
-    return std::to_string(t);
+    time_t now = time(0);
+    return std::to_string(now);
 }
 
-// র‍্যান্ডম স্ট্রিং জেনারেটর
+// RANDOM STRING
 std::string generateRandomString(int length) {
-    static const char alphanum[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-
+    const char charset[] = "0123456789abcdef";
     std::string result;
     std::random_device rd;
-    std::mt19937 engine(rd());
-    std::uniform_int_distribution<> dist(0, sizeof(alphanum) - 2);
+    std::mt19937 gen(rd());
 
     for (int i = 0; i < length; ++i) {
-        result += alphanum[dist(engine)];
+        result += charset[gen() % (sizeof(charset) - 1)];
     }
-
     return result;
 }
