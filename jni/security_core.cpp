@@ -1,15 +1,17 @@
 #include "security_core.hpp"
-#include "utils.hpp"  // getprop এর ডিক্লারেশন এখানে থাকবে
 #include <android/log.h>
 #include <unistd.h>
 #include <fstream>
 #include <dirent.h>
+#include <sys/system_properties.h>
 #include <sys/ptrace.h>
 #include <cstring>
+#include "utils.hpp"
 
 #define LOG_TAG "SecurityCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
+// Root detection
 bool isRooted() {
     const char* paths[] = {
         "/system/bin/su", "/system/xbin/su", "/sbin/su",
@@ -24,6 +26,7 @@ bool isRooted() {
     return false;
 }
 
+// Frida detection
 bool isFrida() {
     std::ifstream maps("/proc/self/maps");
     std::string line;
@@ -36,6 +39,7 @@ bool isFrida() {
     return false;
 }
 
+// Debugger detection
 bool isDebug() {
     if (ptrace(PTRACE_TRACEME, 0, 0, 0) == -1) {
         LOGI("Debugger attached");
@@ -44,6 +48,7 @@ bool isDebug() {
     return false;
 }
 
+// Proxy detection
 bool isProxy() {
     char* p = getenv("http_proxy");
     if (p && (strstr(p, "127.") || strstr(p, "localhost"))) {
@@ -53,6 +58,7 @@ bool isProxy() {
     return false;
 }
 
+// Burp/Canary detection
 bool isBurpCanary() {
     DIR* dir = opendir("/data/data");
     if (!dir) return false;
@@ -69,6 +75,7 @@ bool isBurpCanary() {
     return false;
 }
 
+// Package name check
 bool isWrongPackage(JNIEnv* env, jobject ctx) {
     jclass ctxCls = env->GetObjectClass(ctx);
     jmethodID mid = env->GetMethodID(ctxCls, "getPackageName", "()Ljava/lang/String;");
@@ -85,6 +92,7 @@ bool isWrongPackage(JNIEnv* env, jobject ctx) {
     return wrong;
 }
 
+// Emulator detection
 bool isEmulator() {
     std::string model = getprop("ro.product.model");
     std::string manufacturer = getprop("ro.product.manufacturer");
@@ -95,7 +103,6 @@ bool isEmulator() {
     return false;
 }
 
-// Threat detection
 extern "C"
 const char* detectThreats(JNIEnv* env, jobject ctx) {
     if (isRooted()) return "Rooted";
