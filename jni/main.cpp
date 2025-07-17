@@ -2,30 +2,47 @@
 #include <android/log.h>
 #include <stdlib.h>
 
-#include "security_core.hpp"  // এখানে detectThreats এর প্রোটোটাইপ আছে
+#include "security_core.hpp"  // detectThreats()
 #include "token_core.hpp"
 #include "utils.hpp"
 
 #define LOG_TAG "MainSecure"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-#define SO_PATH "/data/data/com.my.newproject8/lib/libsecure_native.so"
-
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_my_newproject8_SecureManager_getSecureToken(JNIEnv* env, jobject thiz, jobject context) {
-    FILE* f = fopen(SO_PATH, "r");
-    if (!f) {
-        LOGI("SO file missing! Exiting...");
-        exit(0);
-    }
-    fclose(f);
+    LOGI("🔐 getSecureToken() called");
 
-    if (detectThreats(env, context)) {
-        LOGI("Threat found! Exiting...");
-        exit(0);
+    // ✅ Context null check
+    if (context == nullptr) {
+        LOGI("❌ Context is NULL");
+        return env->NewStringUTF("ERROR_NULL_CONTEXT");
     }
 
-    std::string token = generateSecureToken(env, context);
+    // ✅ Run threat detection
+    bool threat = false;
+    try {
+        threat = detectThreats(env, context);
+    } catch (...) {
+        LOGI("❌ Exception during detectThreats()");
+        return env->NewStringUTF("ERROR_DETECT_THREATS_FAILED");
+    }
+
+    if (threat) {
+        LOGI("❌ Threat detected by native code");
+        return env->NewStringUTF("ERROR_THREAT_DETECTED");
+    }
+
+    // ✅ Generate token safely
+    std::string token;
+    try {
+        token = generateSecureToken(env, context);
+    } catch (...) {
+        LOGI("❌ Exception during token generation");
+        return env->NewStringUTF("ERROR_TOKEN_GENERATION_FAILED");
+    }
+
+    LOGI("✅ Token generated successfully: %s", token.c_str());
     return env->NewStringUTF(token.c_str());
 }
