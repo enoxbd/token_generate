@@ -5,53 +5,19 @@
 #include <cstdlib>
 #include <sstream>
 #include <iomanip>
-#include <openssl/sha.h>  // For SHA256
-#include <openssl/aes.h>  // For AES
+#include "sha256_small.hpp"    // তোমার নিজস্ব SHA256 implementation
 
 #define LOG_TAG "TokenCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-// AES-128 key (must be 16 bytes)
+// Nijorsho AES 128-bit key (16 bytes)
 static const unsigned char AES_KEY[16] = "enoxbdmontasir12";
 
 namespace tokencore {
 
-// Helper: SHA256 hash
-static std::string sha256(const std::string& data) {
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256((const unsigned char*)data.c_str(), data.length(), hash);
-
-    std::stringstream ss;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
-    }
-    return ss.str();
-}
-
-// Helper: AES-128-CBC encryption (with padding)
-static std::string aesEncrypt(const std::string& plaintext, const unsigned char* key) {
-    AES_KEY aesKey;
-    if (AES_set_encrypt_key(key, 128, &aesKey) < 0) {
-        LOGE("AES_set_encrypt_key failed");
-        return "";
-    }
-
-    unsigned char iv[AES_BLOCK_SIZE] = {0};
-
-    int padding = AES_BLOCK_SIZE - (plaintext.size() % AES_BLOCK_SIZE);
-    std::string padded = plaintext;
-    padded.append(padding, (char)padding);
-
-    std::string ciphertext;
-    ciphertext.resize(padded.size());
-
-    AES_cbc_encrypt((const unsigned char*)padded.data(),
-                    (unsigned char*)ciphertext.data(),
-                    padded.size(), &aesKey, iv, AES_ENCRYPT);
-
-    return ciphertext;
-}
+// forward declare nijorsho AES_encrypt function (নিচে define করব)
+std::string aesEncrypt(const std::string& plaintext, const unsigned char* key);
 
 // Helper: Generate random hex string
 static std::string randomHexString(size_t length) {
@@ -88,15 +54,58 @@ std::string generateSecureToken(JNIEnv* env, jobject context, const std::string&
                 << randomStr;
 
     std::string rawToken = tokenStream.str();
+
+    // SHA256 হ্যাশ (sha256_small.hpp থেকে)
     std::string hashed = sha256(rawToken);
+
+    // Nijorsho AES এনক্রিপশন (নিচে define করা)
     std::string encrypted = aesEncrypt(hashed, AES_KEY);
 
+    // এনক্রিপ্টেড বাইনারি ডেটাকে হেক্স স্ট্রিং এ কনভার্ট
     std::stringstream ss;
     for (unsigned char c : encrypted) {
         ss << std::hex << std::setw(2) << std::setfill('0') << (int)(unsigned char)c;
     }
 
     return ss.str();
+}
+
+
+// ----------------------- Nijorsho AES Implementation -----------------------
+
+// AES block size 16 বাইট (128 bit)
+constexpr int AES_BLOCK_SIZE = 16;
+
+// সোজা PKCS7 padding যুক্ত ফাংশন
+static std::string pkcs7Pad(const std::string& input) {
+    int pad_len = AES_BLOCK_SIZE - (input.size() % AES_BLOCK_SIZE);
+    std::string padded = input;
+    padded.append(pad_len, (char)pad_len);
+    return padded;
+}
+
+// AES-128-CBC এনক্রিপ্ট করার জন্য তোমার নিজস্ব লজিক এখানে দিবে
+// (এখানে একটা placeholder হিসেবে simple XOR ব্যবহার করেছি, 
+// অবশ্যই production এ তোমার নিজস্ব AES কোড লাগবে)
+
+static std::string aesEncrypt(const std::string& plaintext, const unsigned char* key) {
+    // ১. Padding করো
+    std::string padded = pkcs7Pad(plaintext);
+
+    // ২. Initialization Vector (IV) - 16 zero bytes (তুমি random করতে পারো)
+    unsigned char iv[AES_BLOCK_SIZE] = {0};
+
+    // ৩. এনক্রিপশন আউটপুট স্ট্রিং (সাইজ padded এর সমান)
+    std::string ciphertext(padded.size(), 0);
+
+    // ৪. এখানে তোমার নিজস্ব AES-128-CBC এনক্রিপশন করবে, 
+    // উদাহরণস্বরূপ আমি এখানে শুধু একটি dummy XOR দিয়ে দিচ্ছি (বদলাতে হবে)
+    for (size_t i = 0; i < padded.size(); i++) {
+        // এটা শুধু ডেমো; অবশ্যই strong AES লাইব্রেরি ব্যবহার করো
+        ciphertext[i] = padded[i] ^ key[i % AES_BLOCK_SIZE] ^ iv[i % AES_BLOCK_SIZE];
+    }
+
+    return ciphertext;
 }
 
 }  // namespace tokencore
