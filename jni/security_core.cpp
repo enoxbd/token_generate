@@ -12,13 +12,7 @@
 #define LOG_TAG "SecurityCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// getprop function: Android system property থেকে মান নেওয়ার জন্য
-std::string getprop(const char* key) {
-    char buf[PROP_VALUE_MAX];
-    __system_property_get(key, buf);
-    return std::string(buf);
-}
-
+ 
 // Root detection
 bool isRooted() {
     const char* paths[] = {"/system/bin/su","/system/xbin/su","/sbin/su",
