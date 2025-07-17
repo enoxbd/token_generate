@@ -1,4 +1,3 @@
-নিশ্চিত! নিচে tiny-AES-c লাইব্রেরির aes.c ফাইলের সম্পূর্ণ কোড দিলাম, যা AES-128-CBC এনক্রিপশন/ডিক্রিপশনের জন্য কাজ করবে।
 
 #include "aes.h"
 #include <string.h> // for memcpy
