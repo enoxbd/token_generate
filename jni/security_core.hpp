@@ -1,28 +1,29 @@
 #ifndef SECURITY_CORE_HPP
 #define SECURITY_CORE_HPP
 
-// Root detect করবে
-bool detectRoot();
+#include <jni.h>
 
-// Frida detect করবে
-bool detectFrida();
+// সব ধরনের থ্রেট ডিটেকশন পরিচালনার ফাংশন
+bool isDeviceCompromised(JNIEnv *env, jobject context);
 
-// Magisk detect করবে
-bool detectMagisk();
+// রুট ডিটেকশন
+bool isDeviceRooted();
 
-// Burp Suite detect করবে
-bool detectBurpSuite();
+// ম্যাজিক ফাইল/পাথ চেক করে Magisk ডিটেকশন
+bool isMagiskPresent();
 
-// HTTP Canary detect করবে
-bool detectCanary();
+// ডিবাগার সংযুক্ত কিনা চেক করে
+bool isDebuggerAttached();
 
-// MITM Proxy detect করবে
-bool detectMITM();
+// ফ্রিডা ডিটেকশন (pipe /frida/)
+bool isFridaDetected();
 
-// Network proxy detect করবে (127.0.0.1)
-bool detectProxy();
+// Burp Suite, HTTP Canary, MITMProxy ডিটেকশন (127.0.0.1 proxy ইত্যাদি)
+bool isProxyDetected(JNIEnv *env);
 
-// App mod detect করবে
-bool detectAppMod();
+// প্যাকেজ নাম যাচাই করে
+bool isCorrectPackage(JNIEnv *env, jobject context, const char *expectedPackage);
 
+// কোনো থ্রেট পাওয়া গেলে অ্যাপ এক্সিট করায়
+void forceExit();
 #endif
