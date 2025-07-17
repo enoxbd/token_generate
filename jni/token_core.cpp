@@ -12,12 +12,9 @@
 #define LOG_TAG "TokenCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-std::string getprop(const char* key) {
-    char buf[PROP_VALUE_MAX];
-    __system_property_get(key, buf);
-    return std::string(buf);
-}
 
+
+// SharedPreferences থেকে ডেটা নেওয়ার ফাংশন
 std::string getSP(JNIEnv* env, jobject ctx, const char* name, const char* key) {
     jclass ctxCls = env->GetObjectClass(ctx);
     jmethodID getSP = env->GetMethodID(ctxCls, "getSharedPreferences", "(Ljava/lang/String;I)Landroid/content/SharedPreferences;");
@@ -36,11 +33,12 @@ std::string getSP(JNIEnv* env, jobject ctx, const char* name, const char* key) {
     return out;
 }
 
+// টোকেন জেনারেট করার মূল ফাংশন
 std::string generateSecureToken(JNIEnv* env, jobject ctx) {
     std::string session = getSP(env, ctx, "User", "session_id");
     std::string device = getprop("ro.serialno");
     std::string fp = getprop("ro.build.fingerprint");
-    long t = time(NULL);  // current UNIX timestamp in seconds
+    long t = time(NULL);  // current UNIX timestamp
 
     static bool seeded = false;
     if (!seeded) {
@@ -58,6 +56,7 @@ std::string generateSecureToken(JNIEnv* env, jobject ctx) {
     return sha256(base);
 }
 
+// JNI export
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_my_newproject8_SecureTokenManager_getToken(JNIEnv* env, jobject thiz, jobject context) {
