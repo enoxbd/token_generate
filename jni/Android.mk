@@ -9,7 +9,8 @@ LOCAL_SRC_FILES := \
     JNIUtils.cpp \
     SecurityCore.cpp \
     TokenCore.cpp \
-    aes.c    # এখানে aes.c যোগ করো
+    aes.c \
+    sha256_small.cpp
 
 LOCAL_CPPFLAGS += -std=c++11
 LOCAL_LDLIBS := -llog
