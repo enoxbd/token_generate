@@ -4,15 +4,8 @@
 #include <jni.h>
 #include <string>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// কোন extern "C" নাই কারণ std::string রিটার্ন করছে
 
-// এখন detectThreats std::string রিটার্ন করবে
 std::string detectThreats(JNIEnv* env, jobject ctx);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
