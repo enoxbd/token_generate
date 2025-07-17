@@ -6,11 +6,11 @@ LOCAL_MODULE := enoxbd
 
 LOCAL_SRC_FILES := \
     main.cpp \
-    token_core.cpp \
-    security_core.cpp \
-    utils.cpp
+    JNIUtils.cpp \
+    SecurityCore.cpp \
+    TokenCore.cpp
 
-LOCAL_CPPFLAGS := -std=c++11 -Wall -fPIC -fPIE
+LOCAL_CPPFLAGS += -std=c++11
 LOCAL_LDLIBS := -llog
 
 include $(BUILD_SHARED_LIBRARY)
