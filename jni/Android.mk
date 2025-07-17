@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := secure_native
+LOCAL_MODULE := enoxbd
 LOCAL_SRC_FILES := \
     main.cpp \
     token_core.cpp \
