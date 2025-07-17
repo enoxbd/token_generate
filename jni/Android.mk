@@ -8,10 +8,11 @@ LOCAL_SRC_FILES := \
     main.cpp \
     security_core.cpp \
     token_core.cpp \
-    utils.cpp
+    utils.cpp \
+    sha256_small.cpp \
+    aes_core.cpp
 
 LOCAL_CPPFLAGS += -std=c++11
-
-LOCAL_LDLIBS := -llog -landroid -lcrypto
+LOCAL_LDLIBS := -llog -landroid
 
 include $(BUILD_SHARED_LIBRARY)
