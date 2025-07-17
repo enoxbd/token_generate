@@ -1,5 +1,5 @@
 #include <jni.h>
-#include "token_core.hpp"  // generateSecureToken এর ডিক্লারেশন আছে
+#include "token_core.hpp"  // generateSecureToken() ডিক্লারেশন
 
 extern "C"
 JNIEXPORT jstring JNICALL
