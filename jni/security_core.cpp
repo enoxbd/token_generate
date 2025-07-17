@@ -1,5 +1,4 @@
 #include <jni.h>
-#include <string>
 #include <android/log.h>
 #include <unistd.h>
 #include <fstream>
@@ -12,11 +11,11 @@
 #define LOG_TAG "SecurityCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
- 
-// Root detection
 bool isRooted() {
-    const char* paths[] = {"/system/bin/su","/system/xbin/su","/sbin/su",
-        "/system/app/Superuser.apk","/system/app/Superuser","/system/xbin/daemonsu"};
+    const char* paths[] = {
+        "/system/bin/su", "/system/xbin/su", "/sbin/su",
+        "/system/app/Superuser.apk", "/system/app/Superuser", "/system/xbin/daemonsu"
+    };
     for (auto p : paths) {
         if (access(p, F_OK) == 0) {
             LOGI("Root found: %s", p);
@@ -26,7 +25,6 @@ bool isRooted() {
     return false;
 }
 
-// Frida detection
 bool isFrida() {
     std::ifstream maps("/proc/self/maps");
     std::string line;
@@ -39,7 +37,6 @@ bool isFrida() {
     return false;
 }
 
-// Debugger detection
 bool isDebug() {
     if (ptrace(PTRACE_TRACEME, 0, 0, 0) == -1) {
         LOGI("Debugger attached");
@@ -48,7 +45,6 @@ bool isDebug() {
     return false;
 }
 
-// Proxy detection
 bool isProxy() {
     char* p = getenv("http_proxy");
     if (p && (strstr(p, "127.") || strstr(p, "localhost"))) {
@@ -58,11 +54,9 @@ bool isProxy() {
     return false;
 }
 
-// Burp/Canary detection via installed apps path list
 bool isBurpCanary() {
     DIR* dir = opendir("/data/data");
-    if (!dir) return false; // safety check
-
+    if (!dir) return false;
     struct dirent* d;
     while ((d = readdir(dir)) != nullptr) {
         std::string n = d->d_name;
@@ -76,26 +70,25 @@ bool isBurpCanary() {
     return false;
 }
 
-// Package name check
 bool isWrongPackage(JNIEnv* env, jobject ctx) {
     jclass ctxCls = env->GetObjectClass(ctx);
     jmethodID mid = env->GetMethodID(ctxCls, "getPackageName", "()Ljava/lang/String;");
-    jstring jpkg = (jstring)env->CallObjectMethod(ctx, mid);
-    const char* pkg = env->GetStringUTFChars(jpkg, 0);
+    if (!mid) return true;
 
+    jstring jpkg = (jstring)env->CallObjectMethod(ctx, mid);
+    if (!jpkg) return true;
+
+    const char* pkg = env->GetStringUTFChars(jpkg, 0);
     bool wrong = strcmp(pkg, "com.my.newproject8") != 0;
 
-    env->ReleaseStringUTFChars(jpkg, pkg);
     if (wrong) LOGI("Package mismatch: %s", pkg);
-
+    env->ReleaseStringUTFChars(jpkg, pkg);
     return wrong;
 }
 
-// Emulator detection
 bool isEmulator() {
     std::string model = getprop("ro.product.model");
     std::string manufacturer = getprop("ro.product.manufacturer");
-
     if (model.find("sdk") != std::string::npos || manufacturer.find("Genymotion") != std::string::npos) {
         LOGI("Emulator detected: %s - %s", model.c_str(), manufacturer.c_str());
         return true;
@@ -103,8 +96,8 @@ bool isEmulator() {
     return false;
 }
 
-// Threat detection combined
 extern "C"
 bool detectThreats(JNIEnv* env, jobject ctx) {
-    return isRooted() || isFrida() || isDebug() || isProxy() || isBurpCanary() || isWrongPackage(env, ctx) || isEmulator();
+    return isRooted() || isFrida() || isDebug() ||
+           isProxy() || isBurpCanary() || isWrongPackage(env, ctx) || isEmulator();
 }
