@@ -1,16 +1,15 @@
-#include <jni.h>
-#include <string>
+#include "token_core.hpp"
 #include <android/log.h>
+#include <string>
 #include <time.h>
 #include <cstdlib>
-#include <sstream>
 #include "utils.hpp"
-#include "sha256_small.hpp"
+#include "sha256_small.hpp"  // তোমার sha256 ফাংশন
 
 #define LOG_TAG "TokenCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// SharedPreferences থেকে session_id, device id ও fingerprint নেওয়ার হেল্পার
+// SharedPreferences থেকে ডাটা পড়ার ফাংশন (তোমার কোড অনুসারে)
 std::string getSP(JNIEnv* env, jobject ctx, const char* name, const char* key) {
     if (!env || !ctx) return "0";
 
@@ -50,7 +49,7 @@ std::string getSP(JNIEnv* env, jobject ctx, const char* name, const char* key) {
     return out;
 }
 
-// টোকেন জেনারেটর
+// Token generate করার মূল ফাংশন
 std::string generateSecureToken(JNIEnv* env, jobject ctx) {
     std::string session = getSP(env, ctx, "User", "session_id");
     std::string device = getprop("ro.serialno");
@@ -76,12 +75,4 @@ std::string generateSecureToken(JNIEnv* env, jobject ctx) {
     LOGI("Base string: %s", base.c_str());
 
     return sha256(base);
-}
-
-// JNI ফাংশন এক্সপোর্ট
-extern "C"
-JNIEXPORT jstring JNICALL
-Java_com_my_newproject8_SecureManager_getSecureToken(JNIEnv* env, jobject thiz, jobject context) {
-    std::string token = generateSecureToken(env, context);
-    return env->NewStringUTF(token.c_str());
 }
