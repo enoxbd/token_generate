@@ -10,9 +10,10 @@ LOCAL_SRC_FILES := \
     token_core.cpp \
     utils.cpp \
     sha256_small.cpp \
-    aes_core.cpp
+    aes.cpp   # এখানেই aes_core.cpp এর জায়গায় aes.cpp দিবে
 
 LOCAL_CPPFLAGS += -std=c++11
+
 LOCAL_LDLIBS := -llog -landroid
 
 include $(BUILD_SHARED_LIBRARY)
