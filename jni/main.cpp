@@ -2,6 +2,8 @@
 #include <string>
 #include <android/log.h>
 #include "TokenCore.hpp"  // তোমার token generate করার ফাংশন ডিফাইন করা আছে
+#include "SecurityCore.hpp"
+
 
 #define LOG_TAG "NativeSecure"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
