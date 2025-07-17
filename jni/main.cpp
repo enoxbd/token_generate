@@ -2,7 +2,7 @@
 #include <string>
 #include <android/log.h>
 #include <time.h>
-#include "token_core.hpp"
+#include "TokenCore.hpp"
 
 #define LOG_TAG "MainNative"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
