@@ -12,6 +12,7 @@ JNIEXPORT jstring JNICALL
 Java_com_my_newproject8_SecureManager_getSecureTokenNative(
         JNIEnv* env,
         jobject /* this */,
+        jobject context,
         jstring sessionId) {
 
     // Java থেকে sessionId নিয়ে আসা
@@ -21,8 +22,8 @@ Java_com_my_newproject8_SecureManager_getSecureTokenNative(
 
     LOGI("Received sessionId: %s", sessionIdStr.c_str());
 
-    // Token তৈরি করার ফাংশন কল করা
-    std::string token = tokencore::generateSecureToken(sessionIdStr);
+    // Token তৈরি করার ফাংশন কল করা (env, context, sessionId পাঠাতে হবে)
+    std::string token = tokencore::generateSecureToken(env, context, sessionIdStr);
 
     LOGI("Generated Token: %s", token.c_str());
 
