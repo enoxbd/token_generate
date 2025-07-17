@@ -9,8 +9,7 @@ LOCAL_SRC_FILES := \
     utils.cpp \
     main.cpp
 
-LOCAL_CPPFLAGS += -std=c++11
-
+LOCAL_CPPFLAGS += -std=c++11 -fexceptions
 LOCAL_LDLIBS := -llog
 
 include $(BUILD_SHARED_LIBRARY)
