@@ -61,7 +61,6 @@ std::string generateSecureToken(JNIEnv* env, jobject ctx) {
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_my_newproject8_SecureTokenManager_getToken(JNIEnv* env, jobject thiz, jobject context) {
-    // এখানে Context পাস করা হয়েছে
     std::string token = generateSecureToken(env, context);
     return env->NewStringUTF(token.c_str());
 }
