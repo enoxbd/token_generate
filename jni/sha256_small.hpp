@@ -1,6 +1,9 @@
 #pragma once
 #include <stdint.h>
 #include <cstring>
+#include <string>
+#include <sstream>
+#include <iomanip>
 
 typedef struct {
     uint8_t data[64];
@@ -109,4 +112,18 @@ void sha256_final(SHA256_CTX *ctx, uint8_t hash[]) {
       hash[i + 24] = (ctx->state[6] >> (24 - i * 8)) & 0x000000ff;
       hash[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
    }
+}
+
+// এই ফাংশনটা তোমার token_core.cpp থেকে কল করবে
+inline std::string sha256(const std::string& input) {
+    SHA256_CTX ctx;
+    uint8_t hash[32];
+    sha256_init(&ctx);
+    sha256_update(&ctx, reinterpret_cast<const uint8_t*>(input.c_str()), input.size());
+    sha256_final(&ctx, hash);
+
+    std::stringstream ss;
+    for (int i = 0; i < 32; ++i)
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+    return ss.str();
 }
