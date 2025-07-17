@@ -1,4 +1,4 @@
-#include <jni.h>
+#include "security_core.hpp"
 #include <android/log.h>
 #include <unistd.h>
 #include <fstream>
@@ -6,11 +6,16 @@
 #include <sys/system_properties.h>
 #include <sys/ptrace.h>
 #include <cstring>
-#include <string>
-#include "utils.hpp"
 
 #define LOG_TAG "SecurityCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+
+// প্রোপার্টি পড়ার হেল্পার
+std::string getprop(const char* prop) {
+    char value[PROP_VALUE_MAX] = {0};
+    __system_property_get(prop, value);
+    return std::string(value);
+}
 
 bool isRooted() {
     const char* paths[] = {
@@ -97,8 +102,6 @@ bool isEmulator() {
     return false;
 }
 
-// detectThreats এখন std::string রিটার্ন করবে, যা থ্রেটের নাম অথবা "Safe"
-extern "C"
 std::string detectThreats(JNIEnv* env, jobject ctx) {
     if (isRooted()) return "Rooted";
     if (isFrida()) return "FridaDetected";
