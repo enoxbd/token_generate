@@ -12,7 +12,7 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 // Nijorsho AES 128-bit key (16 bytes)
-static const unsigned char AES_KEY[16] = "enoxbdmontasir12";
+static const unsigned char AES_KEY[16] = {'e','n','o','x','b','d','m','o','n','t','a','s','i','r','1','2'};
 
 namespace tokencore {
 
