@@ -96,8 +96,14 @@ bool isEmulator() {
     return false;
 }
 
-extern "C"
-bool detectThreats(JNIEnv* env, jobject ctx) {
-    return isRooted() || isFrida() || isDebug() ||
-           isProxy() || isBurpCanary() || isWrongPackage(env, ctx) || isEmulator();
+// Updated detectThreats
+std::string detectThreats(JNIEnv* env, jobject ctx) {
+    if (isRooted()) return "Rooted";
+    if (isFrida()) return "FridaDetected";
+    if (isDebug()) return "DebuggerDetected";
+    if (isProxy()) return "ProxyDetected";
+    if (isBurpCanary()) return "BurpOrCanary";
+    if (isWrongPackage(env, ctx)) return "WrongPackage";
+    if (isEmulator()) return "EmulatorDetected";
+    return "Safe";
 }
