@@ -7,8 +7,10 @@
 #include <iomanip>
 #include "sha256_small.hpp"    // SHA256 implementation
 
-// যদি তুমি অন্য AES লাইব্রেরি যুক্ত করো,
-// #include "aes.h" লিখে নিতে পারো, কিন্তু এখানে এটা ব্যবহার করিনি।
+// AES লাইব্রেরি যুক্ত করতে চাইলে uncomment করো
+// extern "C" {
+// #include "aes.h"
+// }
 
 #define LOG_TAG "TokenCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -60,6 +62,8 @@ static std::string aesEncrypt(const std::string& plaintext, const unsigned char*
 
 // Main function: Generate secure token
 std::string generateSecureToken(JNIEnv* env, jobject context, const std::string& sessionKey) {
+    // "User" hocche SharedPreferences file er name
+    // sessionKey hocche oi file er key ("session_id")
     std::string session_id = jniutils::getSharedPreferenceString(env, context, "User", sessionKey);
     if (session_id.empty()) {
         LOGE("Session ID is empty");
@@ -86,7 +90,7 @@ std::string generateSecureToken(JNIEnv* env, jobject context, const std::string&
     // SHA256 হ্যাশ (sha256_small.hpp থেকে)
     std::string hashed = sha256(rawToken);
 
-    // Dummy AES এনক্রিপশন
+    // Dummy AES এনক্রিপশন (XOR) 
     std::string encrypted = aesEncrypt(hashed, AES_KEY);
 
     // এনক্রিপ্টেড বাইনারি ডেটাকে হেক্স স্ট্রিং এ কনভার্ট
