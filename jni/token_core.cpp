@@ -6,6 +6,7 @@
 #include <sys/system_properties.h>
 #include <sstream>
 #include <iomanip>
+#include "utils.hpp"
 
 #include "sha256_small.hpp"
 
