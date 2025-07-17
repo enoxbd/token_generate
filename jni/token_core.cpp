@@ -7,6 +7,7 @@
 #include <sys/system_properties.h>
 #include <sstream>
 #include <iomanip>
+#include "sha256_small.hpp"
 
 #define LOG_TAG "TokenCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
