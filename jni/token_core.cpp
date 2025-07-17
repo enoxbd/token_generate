@@ -6,19 +6,20 @@
 #include <sys/system_properties.h>
 #include <sstream>
 #include <iomanip>
-#include "sha256_small.hpp"
+
+#include "sha256_small.hpp"  // custom sha256 function
 
 #define LOG_TAG "TokenCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// Android system property getter
+// getprop function (as before)
 std::string getprop(const char* key) {
     char buf[PROP_VALUE_MAX];
     __system_property_get(key, buf);
     return std::string(buf);
 }
 
-// SharedPreferences থেকে মান নেওয়া
+// get SharedPreferences string (as before)
 std::string getSP(JNIEnv* env, jobject ctx, const char* name, const char* key) {
     jclass ctxCls = env->GetObjectClass(ctx);
     jmethodID getSP = env->GetMethodID(ctxCls, "getSharedPreferences", "(Ljava/lang/String;I)Landroid/content/SharedPreferences;");
@@ -37,17 +38,13 @@ std::string getSP(JNIEnv* env, jobject ctx, const char* name, const char* key) {
     return out;
 }
 
-// SHA256 hash function
+// generate SHA256 hash using sha256_small.hpp function
 std::string sha256(const std::string& data) {
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256((const unsigned char*)data.c_str(), data.size(), hash);
-    std::ostringstream oss;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
-        oss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
-    return oss.str();
+    // sha256_small.hpp defines a function sha256(const std::string&)
+    return sha256(data);
 }
 
-// Secure Token Generator
+// generate secure token
 std::string generateSecureToken(JNIEnv* env, jobject ctx) {
     std::string session = getSP(env, ctx, "User", "session_id");
     std::string device = getprop("ro.serialno");
@@ -63,9 +60,9 @@ std::string generateSecureToken(JNIEnv* env, jobject ctx) {
     return sha256(base);
 }
 
-// JNI method
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_my_newproject8_SecureTokenManager_getToken(JNIEnv *env, jobject thiz) {
-    return env->NewStringUTF(generateSecureToken(env, thiz).c_str());
+Java_com_my_newproject8_SecureTokenManager_getToken(JNIEnv* env, jobject thiz) {
+    std::string token = generateSecureToken(env, thiz);
+    return env->NewStringUTF(token.c_str());
 }
