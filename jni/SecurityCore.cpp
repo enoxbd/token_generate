@@ -14,10 +14,15 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <sys/system_properties.h>  // Added for PROP_VALUE_MAX
 
 #define LOG_TAG "SecurityCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+#ifndef PROP_VALUE_MAX
+#define PROP_VALUE_MAX 92
+#endif
 
 namespace securitycore {
 
@@ -26,7 +31,6 @@ static jobject g_context = nullptr;
 
 static void logAndExit(const char* reason) {
     LOGE("Security Threat Detected: %s", reason);
-    // Exit immediately with status
     _exit(1);
 }
 
@@ -44,9 +48,8 @@ bool checkForSuspiciousFiles(const std::string& path) {
     return stat(path.c_str(), &st) == 0;
 }
 
-// Root detection methods: check su binaries, dangerous paths, test-keys, etc.
+// Root detection
 bool detectRoot(JNIEnv* env) {
-    // Common su paths
     const char* suPaths[] = {
         "/system/app/Superuser.apk",
         "/sbin/su",
@@ -66,7 +69,6 @@ bool detectRoot(JNIEnv* env) {
         }
     }
 
-    // Check for test-keys in build tags
     jstring buildTags = nullptr;
     {
         jclass buildClass = env->FindClass("android/os/Build");
@@ -86,7 +88,6 @@ bool detectRoot(JNIEnv* env) {
         }
     }
 
-    // Check ro.debuggable property (via system property)
     char roDebuggable[PROP_VALUE_MAX] = {0};
     __system_property_get("ro.debuggable", roDebuggable);
     if (strcmp(roDebuggable, "1") == 0) {
@@ -94,34 +95,31 @@ bool detectRoot(JNIEnv* env) {
         return true;
     }
 
-    // Check for dangerous writable paths
     if (access("/system/app/Superuser.apk", F_OK) == 0) {
         logAndExit("Root detected: Superuser.apk present");
         return true;
     }
-
-    // Could add more checks: BusyBox, Magisk files etc.
 
     return false;
 }
 
 // Debugger detection
 bool detectDebugger() {
-    // Try ptrace anti-debug
     int result = ptrace(PTRACE_TRACEME, 0, nullptr, 0);
     if (result == -1) {
         logAndExit("Debugger detected: ptrace failed");
         return true;
     }
-    // Additionally, check /proc/self/status TracerPid
+
     FILE* statusFile = fopen("/proc/self/status", "r");
     if (!statusFile) return false;
+
     char line[256];
     while (fgets(line, sizeof(line), statusFile)) {
         if (strncmp(line, "TracerPid:", 10) == 0) {
             int tracerPid = atoi(line + 10);
+            fclose(statusFile);
             if (tracerPid != 0) {
-                fclose(statusFile);
                 logAndExit("Debugger detected: TracerPid != 0");
                 return true;
             }
@@ -129,19 +127,17 @@ bool detectDebugger() {
         }
     }
     fclose(statusFile);
-
     return false;
 }
 
-// Frida detection: check for frida-server process or frida gadget loaded
+// Frida detection
 bool detectFrida() {
-    // Check /proc/net/tcp for suspicious ports or sockets to localhost:27042 (default frida port)
     FILE* f = fopen("/proc/net/tcp", "r");
     if (!f) return false;
 
     char line[512];
     while (fgets(line, sizeof(line), f)) {
-        if (strstr(line, "0100007F:") != nullptr) { // 127.0.0.1
+        if (strstr(line, "0100007F:") != nullptr) {
             if (strstr(line, "6A5A") != nullptr || strstr(line, "27042") != nullptr) {
                 fclose(f);
                 logAndExit("Frida detected: suspicious local TCP port");
@@ -151,10 +147,9 @@ bool detectFrida() {
     }
     fclose(f);
 
-    // Check loaded modules for frida
     std::ifstream mapsFile("/proc/self/maps");
     std::string mapsLine;
-    while (std::getline(mapsLine, mapsFile)) {
+    while (std::getline(mapsFile, mapsLine)) {
         if (mapsLine.find("frida") != std::string::npos) {
             logAndExit("Frida detected: frida module loaded");
             return true;
@@ -164,7 +159,7 @@ bool detectFrida() {
     return false;
 }
 
-// Magisk detection by checking files and env vars
+// Magisk detection
 bool detectMagisk() {
     const char* magiskPaths[] = {
         "/sbin/magisk",
@@ -182,7 +177,6 @@ bool detectMagisk() {
         }
     }
 
-    // Check env variables
     if (getenv("MAGISK_VER") != nullptr || getenv("MAGISK_LOG") != nullptr) {
         logAndExit("Magisk detected: env var found");
         return true;
@@ -191,13 +185,23 @@ bool detectMagisk() {
     return false;
 }
 
-// API capture detection - detect proxies or HTTP Canary / Burp Suite by checking proxy and local loopback
+// API capture detection
 bool detectApiCapture(JNIEnv* env) {
-    // Check system proxy properties via JNI
     jclass systemClass = env->FindClass("java/lang/System");
     if (!systemClass) return false;
 
     jmethodID getPropertyMethod = env->GetStaticMethodID(systemClass, "getProperty", "(Ljava/lang/String;)Ljava/lang/String;");
     if (!getPropertyMethod) return false;
 
-    jstring httpProxyHost = (jstring)env->CallStaticObjectMethod(systemClass, getProperty
+    jstring httpProxyHost = (jstring)env->CallStaticObjectMethod(systemClass, getPropertyMethod, env->NewStringUTF("http.proxyHost"));
+    jstring httpsProxyHost = (jstring)env->CallStaticObjectMethod(systemClass, getPropertyMethod, env->NewStringUTF("https.proxyHost"));
+
+    if (httpProxyHost || httpsProxyHost) {
+        logAndExit("API Capture Detected: Proxy settings found");
+        return true;
+    }
+
+    return false;
+}
+
+} // namespace securitycore
