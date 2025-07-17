@@ -5,18 +5,19 @@
 #include <cstdlib>
 #include <sstream>
 #include <iomanip>
-#include "sha256_small.hpp"    // তোমার নিজস্ব SHA256 implementation
+#include "sha256_small.hpp"    // SHA256 implementation
 
-extern "C" {
-#include "aes.h"
-}
+// যদি তুমি অন্য AES লাইব্রেরি যুক্ত করো,
+// #include "aes.h" লিখে নিতে পারো, কিন্তু এখানে এটা ব্যবহার করিনি।
 
 #define LOG_TAG "TokenCore"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 // Nijorsho AES 128-bit key (16 bytes, null terminator নাই)
-static const unsigned char AES_KEY[16] = {'e','n','o','x','b','d','m','o','n','t','a','s','i','r','1','2'};
+static const unsigned char AES_KEY[16] = {
+    'e','n','o','x','b','d','m','o','n','t','a','s','i','r','1','2'
+};
 
 namespace tokencore {
 
@@ -42,12 +43,11 @@ static std::string pkcs7Pad(const std::string& input) {
     return padded;
 }
 
-// AES-128-CBC Encrypt function (dummy XOR encryption for demo only)
-// অবশ্যই production এ strong AES লাইব্রেরি ব্যবহার করবে
+// Dummy AES-128-CBC Encrypt function (XOR base — not secure, just demo)
 static std::string aesEncrypt(const std::string& plaintext, const unsigned char* key) {
     std::string padded = pkcs7Pad(plaintext);
 
-    unsigned char iv[AES_BLOCK_SIZE] = {0};  // Zero IV for demo; random করা ভালো
+    unsigned char iv[AES_BLOCK_SIZE] = {0};  // Zero IV for demo
 
     std::string ciphertext(padded.size(), 0);
 
@@ -86,7 +86,7 @@ std::string generateSecureToken(JNIEnv* env, jobject context, const std::string&
     // SHA256 হ্যাশ (sha256_small.hpp থেকে)
     std::string hashed = sha256(rawToken);
 
-    // Nijorsho AES এনক্রিপশন
+    // Dummy AES এনক্রিপশন
     std::string encrypted = aesEncrypt(hashed, AES_KEY);
 
     // এনক্রিপ্টেড বাইনারি ডেটাকে হেক্স স্ট্রিং এ কনভার্ট
