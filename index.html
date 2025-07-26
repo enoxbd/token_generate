@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Facebook Login Success</title>
+</head>
+<body>
+  <h2>Facebook Login Success</h2>
+  <script>
+    // Facebook থেকে access_token URL hash থেকে extract করে দেখাবে
+    const hash = window.location.hash.substring(1);
+    document.body.innerHTML += "<pre>" + hash + "</pre>";
+  </script>
+</body>
+</html>
